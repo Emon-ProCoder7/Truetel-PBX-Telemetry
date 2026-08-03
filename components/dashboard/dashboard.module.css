@@ -81,8 +81,9 @@
 }
 
 .tab[data-active="true"] {
-  background: var(--accent-soft);
-  color: var(--accent);
+  /* Solid navy chrome, echoing the wordmark; cyan stays reserved for live data. */
+  background: var(--brand-navy);
+  color: var(--fg);
 }
 
 .tab:focus-visible {

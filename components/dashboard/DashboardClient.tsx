@@ -68,7 +68,6 @@ export function DashboardClient({ initialData }: { initialData: DashboardOvervie
       <header className={styles.topbar}>
         <div className={styles.brandBlock}>
           <span className={styles.brandTitle}>TrueTel — PBX Telemetry</span>
-          <span className={styles.brandSub}>Vodia / Vonex call activity by rep</span>
         </div>
         <div className={styles.topbarRight}>
           <PeriodTabs value={period} onChange={setPeriod} />

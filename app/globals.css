@@ -2,25 +2,29 @@
 
 /* ============================================================
    TrueTel PBX Telemetry — data-first dashboard tokens.
-   Off-black ground (never pure black), muted data-ink, semantic
-   color kept separate from the brand accent per dashboard-design
-   (Few) discipline: reserve saturation for what needs attention.
+   Off-black ground with a cool blue undertone (never pure black),
+   matched to the Truetel wordmark/ribbon logo. Muted data-ink,
+   semantic color kept separate from the brand accent per
+   dashboard-design (Few) discipline: reserve saturation for what
+   needs attention.
    ============================================================ */
 
 :root {
-  --bg: #0e0b07;
-  --bg-raised: #151109;
-  --bg-panel: #191410;
-  --line: rgba(244, 238, 226, 0.1);
-  --line-soft: rgba(244, 238, 226, 0.05);
+  --bg: #0a0e15;
+  --bg-raised: #10161f;
+  --bg-panel: #141b26;
+  --line: rgba(226, 236, 248, 0.1);
+  --line-soft: rgba(226, 236, 248, 0.05);
 
-  --fg: #f4eee2;
-  --fg-dim: rgba(244, 238, 226, 0.6);
-  --fg-faint: rgba(244, 238, 226, 0.36);
+  --fg: #eaf1fa;
+  --fg-dim: rgba(234, 241, 250, 0.62);
+  --fg-faint: rgba(234, 241, 250, 0.38);
 
-  /* Brand accent — selection / emphasis only, never a status signal. */
-  --accent: #d8ba7e;
-  --accent-soft: rgba(216, 186, 126, 0.14);
+  /* Brand accent — pixel-sampled from public/truetel-logo.png (the ribbon's
+     cyan, #00b8f0). Selection / emphasis only, never a status signal. */
+  --accent: #00b8f0;
+  --accent-soft: rgba(0, 184, 240, 0.16);
+  --brand-navy: #004888;
 
   /* Semantic — deliberately distinct hues from the accent, intensity-graded. */
   --good: #6fcf8e;
