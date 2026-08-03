@@ -7,6 +7,7 @@ import { KpiCard } from "./KpiCard";
 import { CallVolumeChart } from "./CallVolumeChart";
 import { LiveCallFeed } from "./LiveCallFeed";
 import { RepTable } from "./RepTable";
+import { RepCallsModal } from "./RepCallsModal";
 import type { DashboardOverview, DashboardPeriod } from "@/lib/dashboard/types";
 import { computeDelta, formatRelativeTime } from "@/lib/dashboard/format";
 
@@ -16,6 +17,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardOvervie
   const [period, setPeriod] = useState<DashboardPeriod>(initialData.period);
   const [data, setData] = useState<DashboardOverview>(initialData);
   const [isStale, setIsStale] = useState(false);
+  const [selectedRep, setSelectedRep] = useState<string | null>(null);
   const [, tick] = useState(0);
   const fetchSeq = useRef(0);
 
@@ -138,7 +140,16 @@ export function DashboardClient({ initialData }: { initialData: DashboardOvervie
         <LiveCallFeed calls={data.recent} />
       </section>
 
-      <RepTable reps={data.reps} />
+      <RepTable reps={data.reps} onSelectRep={setSelectedRep} />
+
+      {selectedRep ? (
+        <RepCallsModal
+          agentName={selectedRep}
+          range={data.range}
+          periodLabel={periodLabel}
+          onClose={() => setSelectedRep(null)}
+        />
+      ) : null}
     </div>
   );
 }

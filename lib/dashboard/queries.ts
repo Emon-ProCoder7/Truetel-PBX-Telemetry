@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { currentRangeFor, priorRangeFor, trailingRange } from "./date-range";
 import type {
+  CallDetail,
   CallKpis,
   DashboardOverview,
   DashboardPeriod,
@@ -9,6 +10,8 @@ import type {
   RepStats,
   VolumePoint,
 } from "./types";
+
+const REP_CALLS_LIMIT = 1000;
 
 const num = (v: unknown): number => (v === null || v === undefined ? 0 : Number(v));
 
@@ -71,6 +74,48 @@ function mapRecentCall(row: Record<string, unknown>): RecentCall {
     callStatus: (row.call_status as string) ?? null,
     totalDuration: (row.total_duration as string) ?? null,
     talkTime: (row.talk_time as string) ?? null,
+  };
+}
+
+function mapCallDetail(row: Record<string, unknown>): CallDetail {
+  return {
+    callId: String(row.call_id),
+    callTimestamp: String(row.call_timestamp),
+    callDirection: (row.call_direction as "Inbound" | "Outbound") ?? null,
+    phoneNumber: (row.phone_number as string) ?? null,
+    callStatus: (row.call_status as string) ?? null,
+    totalDuration: (row.total_duration as string) ?? null,
+    talkTime: (row.talk_time as string) ?? null,
+    ringTime: (row.ring_time as string) ?? null,
+    recordingFile: (row.recording_file as string) || null,
+  };
+}
+
+export async function getRepCallDetails(
+  agentName: string,
+  start: string,
+  end: string
+): Promise<{ calls: CallDetail[]; truncated: boolean }> {
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase
+    .from("calls")
+    .select(
+      "call_id, call_timestamp, call_direction, phone_number, call_status, total_duration, talk_time, ring_time, recording_file"
+    )
+    .eq("agent_name", agentName)
+    .gte("call_date", start)
+    .lte("call_date", end)
+    .order("call_timestamp", { ascending: false })
+    .limit(REP_CALLS_LIMIT + 1);
+
+  if (error) throw new Error(`Rep call detail query failed: ${error.message}`);
+
+  const rows = data ?? [];
+  const truncated = rows.length > REP_CALLS_LIMIT;
+  return {
+    calls: rows.slice(0, REP_CALLS_LIMIT).map(mapCallDetail),
+    truncated,
   };
 }
 

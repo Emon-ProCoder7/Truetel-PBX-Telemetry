@@ -40,6 +40,18 @@ export type RecentCall = {
   talkTime: string | null;
 };
 
+export type CallDetail = {
+  callId: string;
+  callTimestamp: string;
+  callDirection: "Inbound" | "Outbound" | null;
+  phoneNumber: string | null;
+  callStatus: string | null;
+  totalDuration: string | null;
+  talkTime: string | null;
+  ringTime: string | null;
+  recordingFile: string | null;
+};
+
 export type DashboardOverview = {
   period: DashboardPeriod;
   range: { start: string; end: string };

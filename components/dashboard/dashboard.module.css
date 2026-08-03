@@ -505,6 +505,126 @@
 
 /* ---------- Responsive ---------- */
 
+/* ---------- Rep row → call detail modal ---------- */
+
+.repRowClickable {
+  cursor: pointer;
+}
+
+.repRowClickable:hover {
+  background: var(--line-soft);
+}
+
+.repRowClickable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 5, 3, 0.68);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 100;
+}
+
+.modalPanel {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  width: min(920px, 100%);
+  max-height: min(720px, 85vh);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.modalTitle {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.modalSub {
+  font-size: 0.76rem;
+  color: var(--fg-faint);
+  margin-top: 3px;
+}
+
+.modalCloseBtn {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: var(--bg-raised);
+  color: var(--fg-dim);
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.modalCloseBtn:hover {
+  color: var(--fg);
+}
+
+.modalBody {
+  overflow-y: auto;
+  overflow-x: auto;
+  padding: 4px 22px 22px;
+}
+
+.modalStatusRow {
+  padding: 40px 0;
+  text-align: center;
+  color: var(--fg-faint);
+  font-size: 0.82rem;
+}
+
+.dirBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.dirBadge[data-dir="Inbound"] {
+  background: var(--good-soft);
+  color: var(--good);
+}
+
+.dirBadge[data-dir="Outbound"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.recBadge {
+  font-size: 0.72rem;
+  color: var(--fg-faint);
+}
+
+.recBadge[data-available="true"] {
+  color: var(--fg-dim);
+}
+
 @media (max-width: 1000px) {
   .kpiGrid {
     grid-template-columns: repeat(2, 1fr);

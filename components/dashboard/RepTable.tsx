@@ -21,7 +21,13 @@ function rateTier(rate: number): "good" | "warn" | "critical" {
   return "critical";
 }
 
-export function RepTable({ reps }: { reps: RepStats[] }) {
+export function RepTable({
+  reps,
+  onSelectRep,
+}: {
+  reps: RepStats[];
+  onSelectRep: (agentName: string) => void;
+}) {
   const [sortKey, setSortKey] = useState<SortKey>("totalCalls");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
@@ -86,7 +92,20 @@ export function RepTable({ reps }: { reps: RepStats[] }) {
                 (teamAverageCalls > 0 && rep.totalCalls < teamAverageCalls * 0.5);
               const tier = rateTier(rep.connectedRate);
               return (
-                <tr key={rep.agentName}>
+                <tr
+                  key={rep.agentName}
+                  className={styles.repRowClickable}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`View all calls for ${rep.agentName}`}
+                  onClick={() => onSelectRep(rep.agentName)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onSelectRep(rep.agentName);
+                    }
+                  }}
+                >
                   <td>
                     <div className={styles.repNameCell}>
                       {flagged ? (
@@ -134,8 +153,8 @@ export function RepTable({ reps }: { reps: RepStats[] }) {
         </table>
       </div>
       <div className={styles.methodNote}>
-        Marker at 60% connected rate = team target. Dot flags reps under 40% connected, or under
-        half the team&apos;s average call count for this period.
+        Click a rep to see every call in this period. Marker at 60% connected rate = team target.
+        Dot flags reps under 40% connected, or under half the team&apos;s average call count.
       </div>
     </div>
   );
