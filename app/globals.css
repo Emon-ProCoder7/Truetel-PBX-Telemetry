@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+/* ============================================================
+   TrueTel PBX Telemetry — data-first dashboard tokens.
+   Off-black ground (never pure black), muted data-ink, semantic
+   color kept separate from the brand accent per dashboard-design
+   (Few) discipline: reserve saturation for what needs attention.
+   ============================================================ */
+
+:root {
+  --bg: #0e0b07;
+  --bg-raised: #151109;
+  --bg-panel: #191410;
+  --line: rgba(244, 238, 226, 0.1);
+  --line-soft: rgba(244, 238, 226, 0.05);
+
+  --fg: #f4eee2;
+  --fg-dim: rgba(244, 238, 226, 0.6);
+  --fg-faint: rgba(244, 238, 226, 0.36);
+
+  /* Brand accent — selection / emphasis only, never a status signal. */
+  --accent: #d8ba7e;
+  --accent-soft: rgba(216, 186, 126, 0.14);
+
+  /* Semantic — deliberately distinct hues from the accent, intensity-graded. */
+  --good: #6fcf8e;
+  --good-soft: rgba(111, 207, 142, 0.14);
+  --warn: #f2a65a;
+  --warn-soft: rgba(242, 166, 90, 0.14);
+  --critical: #e8746b;
+  --critical-soft: rgba(232, 116, 107, 0.14);
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "JetBrains Mono", "SF Mono", Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+  border-color: var(--line);
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--fg);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
