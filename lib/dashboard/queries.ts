@@ -1,12 +1,15 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { currentRangeFor, priorRangeFor, trailingRange } from "./date-range";
+import { currentRangeFor, priorRangeFor, trailingRange, type DateRange } from "./date-range";
+import { forecastCalls } from "./forecast";
 import type {
   CallDetail,
   CallKpis,
   DashboardOverview,
   DashboardPeriod,
+  PeriodAggregate,
   RecentCall,
+  RepAnalytics,
   RepStats,
   VolumePoint,
 } from "./types";
@@ -61,6 +64,7 @@ function mapVolumePoint(row: Record<string, unknown>): VolumePoint {
     callDate: String(row.call_date),
     totalCalls: num(row.total_calls),
     connectedCalls: num(row.connected_calls),
+    talkSeconds: num(row.talk_seconds),
   };
 }
 
@@ -116,6 +120,180 @@ export async function getRepCallDetails(
   return {
     calls: rows.slice(0, REP_CALLS_LIMIT).map(mapCallDetail),
     truncated,
+  };
+}
+
+function sumRange(daily: VolumePoint[], range: DateRange): PeriodAggregate {
+  let calls = 0;
+  let connected = 0;
+  let talkSeconds = 0;
+  for (const point of daily) {
+    if (point.callDate >= range.start && point.callDate <= range.end) {
+      calls += point.totalCalls;
+      connected += point.connectedCalls;
+      talkSeconds += point.talkSeconds;
+    }
+  }
+  return { calls, connected, connectedRate: calls > 0 ? connected / calls : 0, talkSeconds };
+}
+
+function pctDelta(current: number, prior: number): number | null {
+  if (prior === 0) return current === 0 ? 0 : null;
+  return (current - prior) / prior;
+}
+
+function buildInsights(params: {
+  agentName: string;
+  today: PeriodAggregate;
+  yesterday: PeriodAggregate;
+  thisWeek: PeriodAggregate;
+  lastWeek: PeriodAggregate;
+  teamConnectedRateThisWeek: number;
+  teamAvgCallsPerRepPerDay: number;
+  bestDay: { callDate: string; calls: number } | null;
+  trendDirection: "up" | "down" | "flat";
+}): string[] {
+  const { today, yesterday, thisWeek, lastWeek, teamConnectedRateThisWeek, bestDay, trendDirection } =
+    params;
+  const insights: string[] = [];
+
+  const todayDelta = today.calls - yesterday.calls;
+  if (yesterday.calls > 0 || today.calls > 0) {
+    if (todayDelta > 0) insights.push(`${todayDelta} more call${todayDelta === 1 ? "" : "s"} today than yesterday.`);
+    else if (todayDelta < 0)
+      insights.push(`${Math.abs(todayDelta)} fewer call${Math.abs(todayDelta) === 1 ? "" : "s"} today than yesterday.`);
+    else insights.push("Same call count as yesterday so far.");
+  }
+
+  const weekPct = pctDelta(thisWeek.calls, lastWeek.calls);
+  if (weekPct !== null && lastWeek.calls > 0) {
+    const pct = Math.round(Math.abs(weekPct) * 100);
+    insights.push(
+      weekPct >= 0
+        ? `Tracking ${pct}% ahead of last week's pace.`
+        : `Tracking ${pct}% behind last week's pace.`
+    );
+  }
+
+  const rateGap = thisWeek.connectedRate - teamConnectedRateThisWeek;
+  if (thisWeek.calls >= 5) {
+    if (rateGap >= 0.05) {
+      insights.push(
+        `Connected rate is ${Math.round(rateGap * 100)}pts above the team average this week — strong outreach quality.`
+      );
+    } else if (rateGap <= -0.05) {
+      insights.push(
+        `Connected rate is ${Math.round(Math.abs(rateGap) * 100)}pts below the team average this week — may be worth a coaching check-in.`
+      );
+    }
+  }
+
+  if (bestDay && bestDay.calls > 0) {
+    const d = new Date(`${bestDay.callDate}T00:00:00`);
+    const label = new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short" }).format(d);
+    insights.push(`Best day in the last 30: ${bestDay.calls} calls on ${label}.`);
+  }
+
+  if (trendDirection === "up") insights.push("14-day call volume is trending up.");
+  else if (trendDirection === "down") insights.push("14-day call volume is trending down.");
+
+  return insights;
+}
+
+export async function getRepAnalytics(agentName: string): Promise<RepAnalytics> {
+  const supabase = createAdminClient();
+
+  const today = currentRangeFor("today");
+  const yesterday = priorRangeFor(today);
+  const thisWeek = currentRangeFor("week");
+  const lastWeek = priorRangeFor(thisWeek);
+  const thisMonth = currentRangeFor("month");
+  const lastMonth = priorRangeFor(thisMonth);
+  const window70 = trailingRange(70);
+
+  const [repSeriesRes, teamSeriesRes, teamWeekKpisRes] = await Promise.all([
+    supabase.rpc("call_volume_timeseries", {
+      p_start: window70.start,
+      p_end: window70.end,
+      p_agent_name: agentName,
+    }),
+    supabase.rpc("call_volume_timeseries", { p_start: window70.start, p_end: window70.end }),
+    supabase.rpc("call_kpis", { p_start: thisWeek.start, p_end: thisWeek.end }),
+  ]);
+
+  for (const [label, res] of [
+    ["rep daily series", repSeriesRes],
+    ["team daily series", teamSeriesRes],
+    ["team week kpis", teamWeekKpisRes],
+  ] as const) {
+    if (res.error) throw new Error(`Rep analytics query failed (${label}): ${res.error.message}`);
+  }
+
+  const daily = ((repSeriesRes.data as Record<string, unknown>[] | null) ?? []).map(mapVolumePoint);
+  const teamDaily = ((teamSeriesRes.data as Record<string, unknown>[] | null) ?? []).map(mapVolumePoint);
+  const teamWeekKpis = mapKpis((teamWeekKpisRes.data as Record<string, unknown>[] | null)?.[0]);
+
+  const todayAgg = sumRange(daily, today);
+  const yesterdayAgg = sumRange(daily, yesterday);
+  const thisWeekAgg = sumRange(daily, thisWeek);
+  const lastWeekAgg = sumRange(daily, lastWeek);
+  const thisMonthAgg = sumRange(daily, thisMonth);
+  const lastMonthAgg = sumRange(daily, lastMonth);
+
+  const last7 = daily.slice(-7);
+  const sevenDayAvgCalls = last7.length > 0 ? last7.reduce((s, d) => s + d.totalCalls, 0) / last7.length : 0;
+
+  const teamWeekTotal = sumRange(teamDaily, thisWeek);
+  const daysElapsedThisWeek = Math.max(
+    1,
+    Math.round(
+      (new Date(`${thisWeek.end}T00:00:00Z`).getTime() - new Date(`${thisWeek.start}T00:00:00Z`).getTime()) /
+        86_400_000
+    ) + 1
+  );
+  const teamAvgCallsPerRepPerDay =
+    teamWeekKpis.activeReps > 0 ? teamWeekTotal.calls / teamWeekKpis.activeReps / daysElapsedThisWeek : 0;
+
+  const last30 = daily.slice(-30);
+  const bestDay = last30.reduce<{ callDate: string; calls: number } | null>((best, point) => {
+    if (!best || point.totalCalls > best.calls) return { callDate: point.callDate, calls: point.totalCalls };
+    return best;
+  }, null);
+
+  const { points: forecastNext7, direction: trendDirection } = forecastCalls(
+    daily.map((d) => ({ callDate: d.callDate, totalCalls: d.totalCalls })),
+    14,
+    7
+  );
+
+  const insights = buildInsights({
+    agentName,
+    today: todayAgg,
+    yesterday: yesterdayAgg,
+    thisWeek: thisWeekAgg,
+    lastWeek: lastWeekAgg,
+    teamConnectedRateThisWeek: teamWeekTotal.connectedRate,
+    teamAvgCallsPerRepPerDay,
+    bestDay,
+    trendDirection,
+  });
+
+  return {
+    agentName,
+    daily,
+    today: todayAgg,
+    yesterday: yesterdayAgg,
+    thisWeek: thisWeekAgg,
+    lastWeek: lastWeekAgg,
+    thisMonth: thisMonthAgg,
+    lastMonth: lastMonthAgg,
+    sevenDayAvgCalls,
+    teamAvgCallsPerRepPerDay,
+    teamConnectedRateThisWeek: teamWeekTotal.connectedRate,
+    forecastNext7,
+    trendDirection,
+    bestDay,
+    insights,
   };
 }
 

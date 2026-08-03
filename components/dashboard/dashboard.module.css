@@ -585,6 +585,8 @@
 }
 
 .modalBody {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: auto;
   padding: 4px 22px 22px;
@@ -626,6 +628,221 @@
   color: var(--fg-dim);
 }
 
+/* ---------- Rep analytics panel (inside modal) ---------- */
+
+.modalTabs {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  flex-shrink: 0;
+}
+
+.modalTab {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--fg-dim);
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.modalTab[data-active="true"] {
+  background: var(--brand-navy);
+  color: var(--fg);
+}
+
+.insightList {
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.insightChip {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--fg-dim);
+  padding: 8px 12px;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.insightChip::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--accent);
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+
+.statRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.statTile {
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.statTileLabel {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-faint);
+}
+
+.statTileValue {
+  font-family: var(--font-mono);
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.statTileSub {
+  font-size: 0.72rem;
+  color: var(--fg-dim);
+  margin-top: 3px;
+}
+
+.sectionLabel {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--fg-dim);
+  margin: 22px 0 10px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.weekBars {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 110px;
+  padding: 6px 4px 0;
+  position: relative;
+}
+
+.weekParLine {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed var(--fg-faint);
+}
+
+.weekBarCol {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  gap: 6px;
+}
+
+.weekBarTrack {
+  width: 100%;
+  max-width: 34px;
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+}
+
+.weekBarFill {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  background: var(--line);
+}
+
+.weekBarFill[data-today="true"] {
+  background: var(--accent);
+}
+
+.weekBarValue {
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  color: var(--fg-faint);
+}
+
+.weekBarDay {
+  font-size: 0.64rem;
+  color: var(--fg-faint);
+  text-transform: uppercase;
+}
+
+.weekBarDay[data-today="true"] {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.comparisonGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.comparisonTile {
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.comparisonTitle {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--fg-dim);
+  margin-bottom: 10px;
+}
+
+.comparisonRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 5px 0;
+  font-size: 0.8rem;
+  border-top: 1px solid var(--line-soft);
+}
+
+.comparisonRow:first-of-type {
+  border-top: 0;
+}
+
+.comparisonMetric {
+  color: var(--fg-faint);
+}
+
+.comparisonValues {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.comparisonPrior {
+  color: var(--fg-faint);
+}
+
 @media (max-width: 1000px) {
   .kpiGrid {
     grid-template-columns: repeat(2, 1fr);
@@ -637,6 +854,10 @@
 
 @media (max-width: 560px) {
   .kpiGrid {
+    grid-template-columns: 1fr;
+  }
+  .statRow,
+  .comparisonGrid {
     grid-template-columns: 1fr;
   }
 }

@@ -27,6 +27,7 @@ export type VolumePoint = {
   callDate: string;
   totalCalls: number;
   connectedCalls: number;
+  talkSeconds: number;
 };
 
 export type RecentCall = {
@@ -50,6 +51,36 @@ export type CallDetail = {
   talkTime: string | null;
   ringTime: string | null;
   recordingFile: string | null;
+};
+
+export type PeriodAggregate = {
+  calls: number;
+  connected: number;
+  connectedRate: number;
+  talkSeconds: number;
+};
+
+export type ForecastPoint = {
+  callDate: string;
+  projectedCalls: number;
+};
+
+export type RepAnalytics = {
+  agentName: string;
+  daily: VolumePoint[];
+  today: PeriodAggregate;
+  yesterday: PeriodAggregate;
+  thisWeek: PeriodAggregate;
+  lastWeek: PeriodAggregate;
+  thisMonth: PeriodAggregate;
+  lastMonth: PeriodAggregate;
+  sevenDayAvgCalls: number;
+  teamAvgCallsPerRepPerDay: number;
+  teamConnectedRateThisWeek: number;
+  forecastNext7: ForecastPoint[];
+  trendDirection: "up" | "down" | "flat";
+  bestDay: { callDate: string; calls: number } | null;
+  insights: string[];
 };
 
 export type DashboardOverview = {
