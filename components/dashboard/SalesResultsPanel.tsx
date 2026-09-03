@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import styles from "./dashboard.module.css";
 import type { RepOutcomeSummary, RepStats, SalesResults } from "@/lib/dashboard/types";
 import { formatCount, formatPercent } from "@/lib/dashboard/format";
+import { OutcomeTrendChart } from "./OutcomeTrendChart";
 
 const SALES_REPS: RepOutcomeSummary["rep"][] = ["felix", "alvi", "jack"];
 const REP_LABEL: Record<string, string> = { felix: "Felix", alvi: "Alvi", jack: "Jack" };
@@ -161,6 +162,18 @@ export function SalesResultsPanel() {
               </div>
             ))}
           </div>
+
+          {view === "year" ? (
+            <>
+              <div className={styles.sectionLabel}>
+                <span>Monthly cohorts — {data.range.start.slice(0, 4)}</span>
+                <span className={styles.panelMeta}>
+                  bar = leads tagged that month · color = where they stand today
+                </span>
+              </div>
+              <OutcomeTrendChart trend={data.trend} year={data.range.start.slice(0, 4)} />
+            </>
+          ) : null}
 
           <div className={styles.repTableScroll}>
             <table className={styles.repTable}>
