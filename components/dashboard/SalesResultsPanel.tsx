@@ -21,22 +21,27 @@ const EMPTY_OUTCOME = (rep: RepOutcomeSummary["rep"]): RepOutcomeSummary => ({
   unclear: 0,
 });
 
-function monthYearLabel(range: { start: string; end: string }, view: "month" | "year"): string {
-  const d = new Date(`${range.start}T00:00:00`);
-  return view === "month"
-    ? new Intl.DateTimeFormat("en-AU", { month: "long", year: "numeric" }).format(d)
-    : new Intl.DateTimeFormat("en-AU", { year: "numeric" }).format(d);
+function monthLabel(monthValue: string): string {
+  const d = new Date(`${monthValue}-01T00:00:00`);
+  return new Intl.DateTimeFormat("en-AU", { month: "long", year: "numeric" }).format(d);
 }
 
+const CURRENT_YEAR = new Date().getFullYear();
+const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => {
+  const value = `${CURRENT_YEAR}-${String(i + 1).padStart(2, "0")}`;
+  return { value, label: monthLabel(value) };
+});
+const CURRENT_MONTH_VALUE = `${CURRENT_YEAR}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+
 export function SalesResultsPanel() {
-  const [view, setView] = useState<"month" | "year">("month");
+  const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH_VALUE);
   const [data, setData] = useState<SalesResults | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setError(null);
-    fetch(`/api/sales-results?view=${view}`, { cache: "no-store" })
+    fetch(`/api/sales-results?view=month&anchor=${selectedMonth}-01`, { cache: "no-store" })
       .then(async (res) => {
         const json = await res.json();
         if (!res.ok) throw new Error(json.error ?? `status ${res.status}`);
@@ -48,7 +53,7 @@ export function SalesResultsPanel() {
     return () => {
       cancelled = true;
     };
-  }, [view]);
+  }, [selectedMonth]);
 
   const outcomesByRep = new Map(data?.outcomes.map((o) => [o.rep, o]));
   const effortByRep = new Map<string, RepStats>(data?.effort.map((e) => [e.agentName.toLowerCase(), e]));
@@ -92,19 +97,23 @@ export function SalesResultsPanel() {
         <div className={styles.resultsTitleGroup}>
           <span className={styles.resultsTitle}>Sales results — effort + outcome</span>
           <span className={styles.resultsSub}>
-            {data ? monthYearLabel(data.range, data.view) : "…"} · Felix, Alvi, Jack — the
-            reps tracked in GHL. Outcome counts are current status, attributed to the month each
-            contact was tagged worked — a monthly figure, not a daily one.
+            {monthLabel(selectedMonth)} · Felix, Alvi, Jack — the reps tracked in GHL. Outcome
+            counts are current status, attributed to the month each contact was tagged worked —
+            a monthly figure, not a daily one.
           </span>
         </div>
-        <div className={styles.tabs} role="tablist" aria-label="Results view">
-          <button className={styles.tab} data-active={view === "month"} onClick={() => setView("month")}>
-            This month
-          </button>
-          <button className={styles.tab} data-active={view === "year"} onClick={() => setView("year")}>
-            This year
-          </button>
-        </div>
+        <select
+          className={styles.monthSelect}
+          aria-label="Month"
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(e.target.value)}
+        >
+          {MONTH_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.value === CURRENT_MONTH_VALUE ? `${opt.label} (this month)` : opt.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       {error ? (
@@ -164,17 +173,13 @@ export function SalesResultsPanel() {
             ))}
           </div>
 
-          {view === "year" ? (
-            <>
-              <div className={styles.sectionLabel}>
-                <span>Monthly cohorts — {data.range.start.slice(0, 4)}</span>
-                <span className={styles.panelMeta}>
-                  bar = leads tagged that month · color = where they stand today
-                </span>
-              </div>
-              <OutcomeTrendChart trend={data.trend} year={data.range.start.slice(0, 4)} />
-            </>
-          ) : null}
+          <div className={styles.sectionLabel}>
+            <span>Monthly cohorts — {data.range.start.slice(0, 4)}</span>
+            <span className={styles.panelMeta}>
+              bar = leads tagged that month · color = where they stand today
+            </span>
+          </div>
+          <OutcomeTrendChart trend={data.trend} year={data.range.start.slice(0, 4)} />
 
           <div className={styles.repTableScroll}>
             <table className={styles.repTable}>

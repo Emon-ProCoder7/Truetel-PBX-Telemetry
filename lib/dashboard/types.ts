@@ -106,6 +106,7 @@ export type RepOutcomeSummary = {
 
 export type OutcomeTrendPoint = {
   tagMonth: string; // YYYY-MM-01
+  rep: RepOutcomeSummary["rep"];
   bucket: OutcomeBucket;
   contacts: number;
 };

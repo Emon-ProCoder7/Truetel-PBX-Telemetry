@@ -407,6 +407,7 @@ export async function getSalesResults(
 
   const trend = ((trendRes.data as Record<string, unknown>[] | null) ?? []).map((row) => ({
     tagMonth: String(row.tag_month),
+    rep: row.rep as RepOutcomeSummary["rep"],
     bucket: BUCKET_ALIAS[String(row.stage_bucket)] ?? "unclear",
     contacts: num(row.contacts),
   }));
