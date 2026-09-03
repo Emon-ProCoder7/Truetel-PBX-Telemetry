@@ -1,0 +1,105 @@
+{
+  "name": "GHL Outcome Sync",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -800,
+        0
+      ],
+      "id": "8f1a2b3c-0001-4a00-9000-000000000001",
+      "name": "Every Hour"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pulls every contact under the 36 valid mon-yy-rep tags (felix, alvi, jack \u2014\n// samprit/toby/emon are not sales reps and are intentionally not tracked here),\n// buckets each into a result-focused status, and hands off one flat array of\n// rows to the next node for a single bulk upsert into Supabase.\n//\n// Only \"apr-26-felix\"-style 3-letter-month tags are read. Longer variants like\n// \"april-26-felix\" are a naming-drift mistake and are deliberately not matched.\n\nconst GHL_KEY = 'PASTE_YOUR_GHL_PRIVATE_INTEGRATION_TOKEN_HERE'; // or wire via an n8n credential\nconst LOCATION_ID = 'hWIN3ZJnvbKKE45XinlK';\n\nconst YEAR_2DIGIT = new Date().getFullYear() % 100;\nconst REPS = ['felix', 'alvi', 'jack'];\nconst MONTHS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];\n\n// stageId -> result-focused bucket. Built from the stages actually observed\n// on tagged contacts, live, on 2026-08-27 \u2014 not the full generic stage list.\n// A stage that shows up later and isn't in this map falls through to\n// 'unmapped' rather than being silently dropped or miscounted.\nconst STAGE_BUCKET = {\n  'ae4c86f0-374b-421c-a14e-f000906ea509': 'new',              // Symbio: 00 - All New Lead\n  'e6908723-1c55-4e27-bf14-52a01b569869': 'new',              // Cold Caller - Alvi: 00 - All New Lead\n  '270adb1a-9c64-4919-ba94-3642ae6e06bc': 'new',              // Jack TBS: 00 - All New Lead\n  '8a8afdf9-5259-45bc-9cc4-12a734bff257': 'new',              // Campbellfield: 00 - Lead Made\n  'df2182be-dc96-4789-8ca0-49e76c747e33': 'new',              // AI Sophia: To be Called\n  '733a7672-5db5-4bef-ba25-8216eb523705': 'working',          // BDM: Pending Future Opportunities\n  '08e46dcf-18d9-486e-bb6f-90df69318b67': 'working',          // BDM: On Hold\n  '316a5d01-55e0-42b0-9180-f7b343cac38c': 'working',          // BDM: Hot Lead - Callback ASAP\n  'e9b2494b-3cdf-4bd8-9584-a36ee72bd209': 'working',          // BDM: Pending Prepare Proposal\n  '131f289e-45e5-4a18-a648-b5e6b1f59d17': 'appointment_booked', // BDM: Confirmed Appointment\n  '705f8a6b-77e0-46dc-bdf1-f074c46e3f03': 'appointment_booked', // BDM: Face-to-face Meeting In Progress\n  'b42e0498-766c-4db3-92ae-12322cb3e49d': 'appointment_booked', // Symbio: 07 - Qualified Appointment Booked $200+\n  '5b687e21-bae8-4423-a819-29d63d5e11b9': 'proposal_sent',    // BDM: Proposal Sent - Awaiting Responses\n  '329ae774-756c-4602-9201-3af16068c81f': 'proposal_sent',    // BDM: 48 Hours Follow Email\n  '66980d97-ffe9-47a5-a4ec-5eeebc1686dd': 'won',              // BDM: Project Sold\n  'e3f8e471-bec1-45c6-add2-03c60e60c698': 'lost',             // BDM: Deal Lost\n  'c1398d35-e96f-4f5c-8fbd-3fab33ef2653': 'closed_unclear',   // Jack NBN: Closed (won/lost not distinguished)\n};\n\nconst byKey = new Map(); // dedupe contacts that carry more than one month tag \u2014 keep the latest\n\nfor (const rep of REPS) {\n  for (const mon of MONTHS) {\n    const tag = `${mon}-${YEAR_2DIGIT}-${rep}`;\n    const monthNum = String(MONTHS.indexOf(mon) + 1).padStart(2, '0');\n    const tagMonth = `20${YEAR_2DIGIT}-${monthNum}-01`;\n\n    const res = await this.helpers.httpRequest({\n      method: 'POST',\n      url: 'https://services.leadconnectorhq.com/contacts/search',\n      headers: {\n        Authorization: `Bearer ${GHL_KEY}`,\n        Version: '2021-07-28',\n        'Content-Type': 'application/json',\n      },\n      body: {\n        locationId: LOCATION_ID,\n        pageLimit: 100,\n        filters: [{ field: 'tags', operator: 'contains', value: tag }],\n      },\n      json: true,\n    });\n\n    for (const contact of res.contacts || []) {\n      for (const o of contact.opportunities || []) {\n        const key = `${contact.id}::${o.id}`;\n        const existing = byKey.get(key);\n        if (existing && existing.tag_month >= tagMonth) continue; // keep latest tag\n        byKey.set(key, {\n          contact_id: contact.id,\n          opportunity_id: o.id,\n          phone: contact.phone || null,\n          rep,\n          tag,\n          tag_month: tagMonth,\n          stage_id: o.pipelineStageId,\n          stage_bucket: STAGE_BUCKET[o.pipelineStageId] || 'unmapped',\n          opportunity_status: o.status,\n        });\n      }\n    }\n  }\n}\n\nreturn [{ json: { rows: Array.from(byKey.values()) } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        0
+      ],
+      "id": "8f1a2b3c-0002-4a00-9000-000000000002",
+      "name": "Fetch + Bucket GHL Outcomes"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://fhorqpdipuippilnuelp.supabase.co/rest/v1/ghl_outcomes?on_conflict=contact_id,opportunity_id",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "PASTE_SUPABASE_SERVICE_ROLE_KEY_HERE"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer PASTE_SUPABASE_SERVICE_ROLE_KEY_HERE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.rows }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -320,
+        0
+      ],
+      "id": "8f1a2b3c-0003-4a00-9000-000000000003",
+      "name": "Upsert GHL Outcomes to Supabase"
+    }
+  ],
+  "connections": {
+    "Every Hour": {
+      "main": [
+        [
+          {
+            "node": "Fetch + Bucket GHL Outcomes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch + Bucket GHL Outcomes": {
+      "main": [
+        [
+          {
+            "node": "Upsert GHL Outcomes to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "paste-your-own-or-leave-blank"
+  }
+}
