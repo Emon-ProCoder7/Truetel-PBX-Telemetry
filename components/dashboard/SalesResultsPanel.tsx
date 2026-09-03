@@ -173,14 +173,6 @@ export function SalesResultsPanel() {
             ))}
           </div>
 
-          <div className={styles.sectionLabel}>
-            <span>Monthly cohorts — {data.range.start.slice(0, 4)}</span>
-            <span className={styles.panelMeta}>
-              bar = leads tagged that month · color = where they stand today
-            </span>
-          </div>
-          <OutcomeTrendChart trend={data.trend} year={data.range.start.slice(0, 4)} />
-
           <div className={styles.repTableScroll}>
             <table className={styles.repTable}>
               <thead>
@@ -213,6 +205,14 @@ export function SalesResultsPanel() {
               </tbody>
             </table>
           </div>
+
+          <div className={styles.sectionLabel}>
+            <span>Monthly cohorts — {data.range.start.slice(0, 4)}</span>
+            <span className={styles.panelMeta}>
+              bar = leads tagged that month · color = where they stand today
+            </span>
+          </div>
+          <OutcomeTrendChart trend={data.trend} year={data.range.start.slice(0, 4)} />
 
           {totals.unclear > 0 ? (
             <div className={styles.resultsFootnote}>
