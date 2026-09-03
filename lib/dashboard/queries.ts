@@ -7,10 +7,13 @@ import type {
   CallKpis,
   DashboardOverview,
   DashboardPeriod,
+  OutcomeBucket,
   PeriodAggregate,
   RecentCall,
   RepAnalytics,
+  RepOutcomeSummary,
   RepStats,
+  SalesResults,
   VolumePoint,
 } from "./types";
 
@@ -338,6 +341,83 @@ export async function getDashboardOverview(period: DashboardPeriod): Promise<Das
       mapVolumePoint
     ),
     recent: ((recentRes.data as Record<string, unknown>[] | null) ?? []).map(mapRecentCall),
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+function mapRepOutcome(row: Record<string, unknown>): RepOutcomeSummary {
+  return {
+    rep: row.rep as RepOutcomeSummary["rep"],
+    taggedContacts: num(row.tagged_contacts),
+    new: num(row.new_count),
+    working: num(row.working_count),
+    appointmentBooked: num(row.appointment_booked_count),
+    proposalSent: num(row.proposal_sent_count),
+    won: num(row.won_count),
+    lost: num(row.lost_count),
+    unclear: num(row.unclear_count),
+  };
+}
+
+const BUCKET_ALIAS: Record<string, OutcomeBucket> = {
+  new: "new",
+  working: "working",
+  appointment_booked: "appointment_booked",
+  proposal_sent: "proposal_sent",
+  won: "won",
+  lost: "lost",
+  closed_unclear: "unclear",
+  unmapped: "unclear",
+};
+
+/**
+ * Sales outcomes, sourced from GHL tags + BDM/cold-caller pipeline stages
+ * (synced into `ghl_outcomes` by a separate n8n workflow). Only felix, alvi,
+ * and jack carry this tracking today — Samprit and Emon/Toby aren't sales
+ * reps and are intentionally excluded here (they still show in the raw call
+ * effort table above).
+ *
+ * Grain: month/year, not daily — see the migration's header comment for why
+ * (GHL's stage-change timestamps are contaminated by bulk admin sweeps, not
+ * real day-by-day signal). Each contact counts once, at their furthest/most
+ * resolved stage across any opportunity they carry.
+ */
+export async function getSalesResults(
+  p_start: string,
+  p_end: string,
+  view: "month" | "year"
+): Promise<SalesResults> {
+  const supabase = createAdminClient();
+
+  const [kpisRes, effortRes, outcomesRes, trendRes] = await Promise.all([
+    supabase.rpc("call_kpis", { p_start, p_end }),
+    supabase.rpc("rep_call_stats", { p_start, p_end }),
+    supabase.rpc("rep_outcome_summary", { p_start, p_end }),
+    supabase.rpc("outcome_monthly_trend", {}),
+  ]);
+
+  for (const [label, res] of [
+    ["call_kpis", kpisRes],
+    ["rep_call_stats", effortRes],
+    ["rep_outcome_summary", outcomesRes],
+    ["outcome_monthly_trend", trendRes],
+  ] as const) {
+    if (res.error) throw new Error(`Sales results query failed (${label}): ${res.error.message}`);
+  }
+
+  const trend = ((trendRes.data as Record<string, unknown>[] | null) ?? []).map((row) => ({
+    tagMonth: String(row.tag_month),
+    bucket: BUCKET_ALIAS[String(row.stage_bucket)] ?? "unclear",
+    contacts: num(row.contacts),
+  }));
+
+  return {
+    range: { start: p_start, end: p_end },
+    view,
+    kpis: mapKpis((kpisRes.data as Record<string, unknown>[] | null)?.[0]),
+    effort: ((effortRes.data as Record<string, unknown>[] | null) ?? []).map(mapRep),
+    outcomes: ((outcomesRes.data as Record<string, unknown>[] | null) ?? []).map(mapRepOutcome),
+    trend,
     generatedAt: new Date().toISOString(),
   };
 }

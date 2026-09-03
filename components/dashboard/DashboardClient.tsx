@@ -8,6 +8,7 @@ import { CallVolumeChart } from "./CallVolumeChart";
 import { LiveCallFeed } from "./LiveCallFeed";
 import { RepTable } from "./RepTable";
 import { RepCallsModal } from "./RepCallsModal";
+import { SalesResultsPanel } from "./SalesResultsPanel";
 import type { DashboardOverview, DashboardPeriod } from "@/lib/dashboard/types";
 import { computeDelta, formatRelativeTime } from "@/lib/dashboard/format";
 
@@ -140,6 +141,8 @@ export function DashboardClient({ initialData }: { initialData: DashboardOvervie
       </section>
 
       <RepTable reps={data.reps} onSelectRep={setSelectedRep} />
+
+      <SalesResultsPanel />
 
       {selectedRep ? (
         <RepCallsModal

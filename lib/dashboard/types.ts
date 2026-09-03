@@ -83,6 +83,43 @@ export type RepAnalytics = {
   insights: string[];
 };
 
+export type OutcomeBucket =
+  | "new"
+  | "working"
+  | "appointment_booked"
+  | "proposal_sent"
+  | "won"
+  | "lost"
+  | "unclear";
+
+export type RepOutcomeSummary = {
+  rep: "felix" | "alvi" | "jack";
+  taggedContacts: number;
+  new: number;
+  working: number;
+  appointmentBooked: number;
+  proposalSent: number;
+  won: number;
+  lost: number;
+  unclear: number;
+};
+
+export type OutcomeTrendPoint = {
+  tagMonth: string; // YYYY-MM-01
+  bucket: OutcomeBucket;
+  contacts: number;
+};
+
+export type SalesResults = {
+  range: { start: string; end: string };
+  view: "month" | "year";
+  kpis: CallKpis;
+  effort: RepStats[];
+  outcomes: RepOutcomeSummary[];
+  trend: OutcomeTrendPoint[];
+  generatedAt: string;
+};
+
 export type DashboardOverview = {
   period: DashboardPeriod;
   range: { start: string; end: string };

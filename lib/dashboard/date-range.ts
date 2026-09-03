@@ -59,3 +59,20 @@ export function trailingRange(days: number): DateRange {
   const today = toMelbourneDateString(new Date());
   return { start: addDays(today, -(days - 1)), end: today };
 }
+
+/** Full calendar month containing `anchor` (default: today, Melbourne). */
+export function monthRange(anchor?: string): DateRange {
+  const base = anchor ?? toMelbourneDateString(new Date());
+  const [y, m] = base.split("-");
+  const start = `${y}-${m}-01`;
+  const lastDay = new Date(Date.UTC(Number(y), Number(m), 0)).getUTCDate();
+  const end = `${y}-${m}-${String(lastDay).padStart(2, "0")}`;
+  return { start, end };
+}
+
+/** Full calendar year containing `anchor` (default: today, Melbourne). */
+export function yearRange(anchor?: string): DateRange {
+  const base = anchor ?? toMelbourneDateString(new Date());
+  const y = base.split("-")[0];
+  return { start: `${y}-01-01`, end: `${y}-12-31` };
+}
