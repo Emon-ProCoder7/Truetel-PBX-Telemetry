@@ -947,6 +947,7 @@
 
 .funnelFill[data-tone="won"] { background: var(--good); }
 .funnelFill[data-tone="lost"] { background: var(--critical); }
+.funnelFill[data-tone="muted"] { background: var(--fg-faint); }
 
 .funnelCount {
   font-family: var(--font-mono);

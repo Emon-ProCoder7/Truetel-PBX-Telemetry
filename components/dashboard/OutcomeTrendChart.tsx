@@ -1,9 +1,12 @@
 import styles from "./dashboard.module.css";
 import type { OutcomeBucket, OutcomeTrendPoint } from "@/lib/dashboard/types";
 
-const BUCKET_ORDER: OutcomeBucket[] = [
-  "new",
-  "working",
+// New + Working aren't results, just "hasn't gotten there yet" — merged into
+// one quiet segment so the stack reads as results first, backlog second.
+type DisplayBucket = "still_working" | "appointment_booked" | "proposal_sent" | "won" | "lost" | "unclear";
+
+const DISPLAY_ORDER: DisplayBucket[] = [
+  "still_working",
   "appointment_booked",
   "proposal_sent",
   "won",
@@ -11,9 +14,8 @@ const BUCKET_ORDER: OutcomeBucket[] = [
   "unclear",
 ];
 
-const BUCKET_LABEL: Record<OutcomeBucket, string> = {
-  new: "New",
-  working: "Working",
+const DISPLAY_LABEL: Record<DisplayBucket, string> = {
+  still_working: "Still working",
   appointment_booked: "Appt. booked",
   proposal_sent: "Proposal sent",
   won: "Won",
@@ -21,18 +23,20 @@ const BUCKET_LABEL: Record<OutcomeBucket, string> = {
   unclear: "Unclear",
 };
 
-const BUCKET_COLOR: Record<OutcomeBucket, string> = {
-  new: "var(--fg-faint)",
-  working: "rgba(0, 184, 240, 0.35)",
+const DISPLAY_COLOR: Record<DisplayBucket, string> = {
+  still_working: "var(--fg-faint)",
   appointment_booked: "var(--accent)",
   // A distinct hue on purpose — proposal_sent sitting between two cyans
-  // (working's translucent cyan, appointment_booked's solid cyan) made the
-  // stack unreadable; violet reads clearly against the dark ground.
+  // made the stack unreadable; violet reads clearly against the dark ground.
   proposal_sent: "#a78bfa",
   won: "var(--good)",
   lost: "var(--critical)",
   unclear: "var(--warn)",
 };
+
+function toDisplayBucket(bucket: OutcomeBucket): DisplayBucket {
+  return bucket === "new" || bucket === "working" ? "still_working" : bucket;
+}
 
 const MONTH_LABEL = Array.from({ length: 12 }, (_, i) =>
   new Intl.DateTimeFormat("en-AU", { month: "short" }).format(new Date(Date.UTC(2000, i, 1)))
@@ -47,19 +51,20 @@ const MONTH_LABEL = Array.from({ length: 12 }, (_, i) =>
  * event stream (see the ghl_outcomes migration for why).
  */
 export function OutcomeTrendChart({ trend, year }: { trend: OutcomeTrendPoint[]; year: string }) {
-  const byMonth = new Map<number, Partial<Record<OutcomeBucket, number>>>();
+  const byMonth = new Map<number, Partial<Record<DisplayBucket, number>>>();
   for (const t of trend) {
     const [y, m] = t.tagMonth.split("-");
     if (y !== year) continue;
     const monthIndex = Number(m) - 1;
+    const bucket = toDisplayBucket(t.bucket);
     const rec = byMonth.get(monthIndex) ?? {};
-    rec[t.bucket] = (rec[t.bucket] ?? 0) + t.contacts;
+    rec[bucket] = (rec[bucket] ?? 0) + t.contacts;
     byMonth.set(monthIndex, rec);
   }
 
   const totals = Array.from({ length: 12 }, (_, i) => {
     const rec = byMonth.get(i) ?? {};
-    return BUCKET_ORDER.reduce((sum, b) => sum + (rec[b] ?? 0), 0);
+    return DISPLAY_ORDER.reduce((sum, b) => sum + (rec[b] ?? 0), 0);
   });
   const maxTotal = Math.max(1, ...totals);
 
@@ -78,7 +83,7 @@ export function OutcomeTrendChart({ trend, year }: { trend: OutcomeTrendPoint[];
             <div className={styles.trendBarCol} key={monthIndex}>
               <span className={styles.trendBarTotal}>{total || ""}</span>
               <div className={styles.trendBarTrack}>
-                {BUCKET_ORDER.map((bucket) => {
+                {DISPLAY_ORDER.map((bucket) => {
                   const value = rec[bucket] ?? 0;
                   if (value === 0) return null;
                   const heightPct = (value / maxTotal) * 100;
@@ -91,9 +96,9 @@ export function OutcomeTrendChart({ trend, year }: { trend: OutcomeTrendPoint[];
                       style={{
                         height: `${heightPct}%`,
                         bottom: `${bottomPct}%`,
-                        background: BUCKET_COLOR[bucket],
+                        background: DISPLAY_COLOR[bucket],
                       }}
-                      title={`${BUCKET_LABEL[bucket]}: ${value}`}
+                      title={`${DISPLAY_LABEL[bucket]}: ${value}`}
                     />
                   );
                 })}
@@ -104,10 +109,10 @@ export function OutcomeTrendChart({ trend, year }: { trend: OutcomeTrendPoint[];
         })}
       </div>
       <div className={styles.trendLegend}>
-        {BUCKET_ORDER.map((bucket) => (
+        {DISPLAY_ORDER.map((bucket) => (
           <span className={styles.trendLegendItem} key={bucket}>
-            <span className={styles.trendLegendSwatch} style={{ background: BUCKET_COLOR[bucket] }} />
-            {BUCKET_LABEL[bucket]}
+            <span className={styles.trendLegendSwatch} style={{ background: DISPLAY_COLOR[bucket] }} />
+            {DISPLAY_LABEL[bucket]}
           </span>
         ))}
       </div>

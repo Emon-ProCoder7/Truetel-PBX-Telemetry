@@ -75,9 +75,10 @@ export function SalesResultsPanel() {
     { calls: 0, connected: 0, tagged: 0, new: 0, working: 0, appointmentBooked: 0, proposalSent: 0, won: 0, lost: 0, unclear: 0 }
   );
 
-  const funnelStages: { label: string; value: number; tone?: "won" | "lost" }[] = [
-    { label: "New", value: totals.new },
-    { label: "Working", value: totals.working },
+  // New + Working aren't results, just "not there yet" — one quiet line
+  // instead of two bars competing with what actually happened.
+  const funnelStages: { label: string; value: number; tone?: "won" | "lost" | "muted" }[] = [
+    { label: "Still working", value: totals.new + totals.working, tone: "muted" },
     { label: "Appointment booked", value: totals.appointmentBooked },
     { label: "Proposal sent", value: totals.proposalSent },
     { label: "Won", value: totals.won, tone: "won" },
