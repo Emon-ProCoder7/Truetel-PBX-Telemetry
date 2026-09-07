@@ -5,14 +5,14 @@ import styles from "./dashboard.module.css";
 import type { RepStats } from "@/lib/dashboard/types";
 import { formatCount, formatDuration, formatPercent } from "@/lib/dashboard/format";
 
-type SortKey = "totalCalls" | "connectedRate" | "avgTalkSeconds" | "outboundCalls" | "inboundCalls";
+type SortKey = "totalCalls" | "connectedRate" | "totalTalkSeconds" | "outboundCalls" | "inboundCalls";
 
 const COLUMNS: { key: SortKey; label: string }[] = [
   { key: "totalCalls", label: "Total calls" },
   { key: "outboundCalls", label: "Outbound" },
   { key: "inboundCalls", label: "Inbound" },
   { key: "connectedRate", label: "Connected rate" },
-  { key: "avgTalkSeconds", label: "Avg talk time" },
+  { key: "totalTalkSeconds", label: "Total talk time" },
 ];
 
 function rateTier(rate: number): "good" | "warn" | "critical" {
@@ -145,7 +145,7 @@ export function RepTable({
                       {formatPercent(rep.connectedRate)}
                     </span>
                   </td>
-                  <td className={styles.cellNum}>{formatDuration(rep.avgTalkSeconds)}</td>
+                  <td className={styles.cellNum}>{formatDuration(rep.totalTalkSeconds)}</td>
                 </tr>
               );
             })}
