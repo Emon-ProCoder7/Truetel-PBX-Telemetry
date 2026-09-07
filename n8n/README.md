@@ -32,3 +32,13 @@ map when a new stage shows up.
 timestamp was checked live and found to be dominated by bulk administrative
 touches, not real day-by-day activity. See migration `0004_ghl_outcomes.sql`
 for the full note.
+
+**"DM name collected":** a separate, flat tag per rep — `dm name
+collected-felix`, `dm name collected-alvi` (add `dm name collected-jack` in
+GHL whenever Jack starts using it; the code already loops all three reps and
+just gets an empty result back for a rep with no such tag yet). Unlike the
+`mon-yy-rep` tags this one carries no month, so it's fetched once per rep and
+stamped as a `dm_collected` boolean onto whatever row(s) that contact already
+gets from the mon-yy-rep loop — it only counts for contacts already in the
+tracked funnel, not a new entry point into it. See migration
+`0007_dm_collected.sql`.

@@ -349,6 +349,7 @@ function mapRepOutcome(row: Record<string, unknown>): RepOutcomeSummary {
   return {
     rep: row.rep as RepOutcomeSummary["rep"],
     taggedContacts: num(row.tagged_contacts),
+    dmCollected: num(row.dm_collected_count),
     new: num(row.new_count),
     working: num(row.working_count),
     appointmentBooked: num(row.appointment_booked_count),

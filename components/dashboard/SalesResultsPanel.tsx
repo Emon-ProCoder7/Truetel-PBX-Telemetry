@@ -12,6 +12,7 @@ const REP_LABEL: Record<string, string> = { felix: "Felix", alvi: "Alvi", jack: 
 const EMPTY_OUTCOME = (rep: RepOutcomeSummary["rep"]): RepOutcomeSummary => ({
   rep,
   taggedContacts: 0,
+  dmCollected: 0,
   new: 0,
   working: 0,
   appointmentBooked: 0,
@@ -69,6 +70,7 @@ export function SalesResultsPanel() {
       calls: acc.calls + (r.effort?.totalCalls ?? 0),
       connected: acc.connected + (r.effort?.connectedCalls ?? 0),
       tagged: acc.tagged + r.outcome.taggedContacts,
+      dmCollected: acc.dmCollected + r.outcome.dmCollected,
       new: acc.new + r.outcome.new,
       working: acc.working + r.outcome.working,
       appointmentBooked: acc.appointmentBooked + r.outcome.appointmentBooked,
@@ -77,7 +79,7 @@ export function SalesResultsPanel() {
       lost: acc.lost + r.outcome.lost,
       unclear: acc.unclear + r.outcome.unclear,
     }),
-    { calls: 0, connected: 0, tagged: 0, new: 0, working: 0, appointmentBooked: 0, proposalSent: 0, won: 0, lost: 0, unclear: 0 }
+    { calls: 0, connected: 0, tagged: 0, dmCollected: 0, new: 0, working: 0, appointmentBooked: 0, proposalSent: 0, won: 0, lost: 0, unclear: 0 }
   );
 
   // New + Working aren't results, just "not there yet" — one quiet line
@@ -180,6 +182,7 @@ export function SalesResultsPanel() {
                   <th>Rep</th>
                   <th>Calls</th>
                   <th>Connected</th>
+                  <th>DM collected</th>
                   <th>Tagged</th>
                   <th>Appt. booked</th>
                   <th>Proposal sent</th>
@@ -195,6 +198,7 @@ export function SalesResultsPanel() {
                     <td className={styles.cellNum}>
                       {effort ? formatPercent(effort.connectedRate) : "0%"}
                     </td>
+                    <td className={styles.cellNum}>{outcome.dmCollected}</td>
                     <td className={styles.cellNum}>{outcome.taggedContacts}</td>
                     <td className={styles.cellNum}>{outcome.appointmentBooked}</td>
                     <td className={styles.cellNum}>{outcome.proposalSent}</td>

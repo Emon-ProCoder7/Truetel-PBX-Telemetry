@@ -95,6 +95,7 @@ export type OutcomeBucket =
 export type RepOutcomeSummary = {
   rep: "felix" | "alvi" | "jack";
   taggedContacts: number;
+  dmCollected: number;
   new: number;
   working: number;
   appointmentBooked: number;
