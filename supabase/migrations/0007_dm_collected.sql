@@ -8,7 +8,11 @@
 
 alter table public.ghl_outcomes add column if not exists dm_collected boolean not null default false;
 
-create or replace function public.rep_outcome_summary(p_start date, p_end date)
+-- Return columns changed (dm_collected_count added), so drop + recreate
+-- rather than replace — same reason as migration 0006.
+drop function if exists public.rep_outcome_summary(date, date);
+
+create function public.rep_outcome_summary(p_start date, p_end date)
 returns table (
   rep text,
   tagged_contacts bigint,
