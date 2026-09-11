@@ -3,8 +3,8 @@
 `ghl-outcome-sync.json` is an importable n8n workflow, separate from the
 existing CDR-ingestion workflow (`CDR-truetel`) — it doesn't touch that one.
 
-**What it does:** every hour, pulls every GHL contact under the 36 valid
-`mon-yy-rep` tags (Felix, Alvi, Jack — 12 months × 3 reps), reads their
+**What it does:** every hour, pulls every GHL contact under the 48 valid
+`mon-yy-rep` tags (Felix, Alvi, Jack, Farhan — 12 months × 4 reps), reads their
 opportunity stage(s), buckets each into a result-focused status (new /
 working / appointment booked / proposal sent / won / lost), and upserts one
 row per contact-opportunity pair into Supabase's `ghl_outcomes` table. That

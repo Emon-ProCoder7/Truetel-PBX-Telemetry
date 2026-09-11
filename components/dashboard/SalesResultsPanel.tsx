@@ -6,8 +6,8 @@ import type { RepOutcomeSummary, RepStats, SalesResults } from "@/lib/dashboard/
 import { formatCount, formatPercent } from "@/lib/dashboard/format";
 import { OutcomeTrendChart } from "./OutcomeTrendChart";
 
-const SALES_REPS: RepOutcomeSummary["rep"][] = ["felix", "alvi", "jack"];
-const REP_LABEL: Record<string, string> = { felix: "Felix", alvi: "Alvi", jack: "Jack" };
+const SALES_REPS: RepOutcomeSummary["rep"][] = ["felix", "alvi", "jack", "farhan"];
+const REP_LABEL: Record<string, string> = { felix: "Felix", alvi: "Alvi", jack: "Jack", farhan: "Farhan" };
 
 const EMPTY_OUTCOME = (rep: RepOutcomeSummary["rep"]): RepOutcomeSummary => ({
   rep,
@@ -99,7 +99,7 @@ export function SalesResultsPanel() {
         <div className={styles.resultsTitleGroup}>
           <span className={styles.resultsTitle}>Sales results — effort + outcome</span>
           <span className={styles.resultsSub}>
-            {monthLabel(selectedMonth)} · Felix, Alvi, Jack — the reps tracked in GHL. Outcome
+            {monthLabel(selectedMonth)} · Felix, Alvi, Jack, Farhan — the reps tracked in GHL. Outcome
             counts are current status, attributed to the month each contact was tagged worked —
             a monthly figure, not a daily one.
           </span>

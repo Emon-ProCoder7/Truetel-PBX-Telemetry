@@ -52,6 +52,7 @@ const REP_FILTERS: { key: RepFilter; label: string }[] = [
   { key: "felix", label: "Felix" },
   { key: "alvi", label: "Alvi" },
   { key: "jack", label: "Jack" },
+  { key: "farhan", label: "Farhan" },
 ];
 
 /**
