@@ -14,34 +14,6 @@ function shortDate(dateLike: string): string {
   }).format(d);
 }
 
-function monthLabel(monthValue: string): string {
-  const d = new Date(`${monthValue}-01T00:00:00`);
-  return new Intl.DateTimeFormat("en-AU", { month: "long", year: "numeric" }).format(d);
-}
-
-const CURRENT_YEAR = new Date().getFullYear();
-const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => {
-  const value = `${CURRENT_YEAR}-${String(i + 1).padStart(2, "0")}`;
-  return { value, label: monthLabel(value) };
-});
-
-// Melbourne-local "today" as YYYY-MM-DD, matching how call_date is stamped
-// everywhere else in this app (see the n8n ingestion Code nodes).
-function todayMelbourne(): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Melbourne" }).format(new Date());
-}
-
-// Full calendar bounds for a "YYYY-MM" value, capped at today when the
-// selected month is the current month in progress.
-function monthBounds(monthValue: string): { start: string; end: string } {
-  const [y, m] = monthValue.split("-").map(Number);
-  const start = `${monthValue}-01`;
-  const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  const monthEnd = `${monthValue}-${String(lastDay).padStart(2, "0")}`;
-  const today = todayMelbourne();
-  return { start, end: monthEnd > today ? today : monthEnd };
-}
-
 function csvCell(value: string): string {
   if (/[",\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
   return value;
@@ -85,24 +57,19 @@ function downloadCallsCsv(agentName: string, monthValue: string, calls: CallDeta
 export function RepCallLog({
   agentName,
   range,
+  monthValue,
+  monthOptions,
+  onMonthChange,
 }: {
   agentName: string;
   range: { start: string; end: string };
+  monthValue: string;
+  monthOptions: { value: string; label: string }[];
+  onMonthChange: (value: string) => void;
 }) {
-  // null = defer to the parent-selected period (Today / This week / This
-  // month) exactly as before. Set once the user picks a month from the
-  // dropdown below, which then takes over regardless of the top-level tab.
-  const [monthOverride, setMonthOverride] = useState<string | null>(null);
   const [calls, setCalls] = useState<CallDetail[] | null>(null);
   const [truncated, setTruncated] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMonthOverride(null);
-  }, [agentName]);
-
-  const effectiveRange = monthOverride ? monthBounds(monthOverride) : range;
-  const selectedMonthValue = monthOverride ?? range.start.slice(0, 7);
 
   useEffect(() => {
     let cancelled = false;
@@ -111,11 +78,7 @@ export function RepCallLog({
 
     async function load() {
       try {
-        const params = new URLSearchParams({
-          agent: agentName,
-          start: effectiveRange.start,
-          end: effectiveRange.end,
-        });
+        const params = new URLSearchParams({ agent: agentName, start: range.start, end: range.end });
         const res = await fetch(`/api/rep-calls?${params.toString()}`, { cache: "no-store" });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error ?? `status ${res.status}`);
@@ -132,8 +95,7 @@ export function RepCallLog({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agentName, effectiveRange.start, effectiveRange.end]);
+  }, [agentName, range.start, range.end]);
 
   const canDownload = (calls?.length ?? 0) > 0;
 
@@ -141,11 +103,11 @@ export function RepCallLog({
     <div className={styles.logToolbar}>
       <select
         className={styles.monthSelect}
-        aria-label="Month"
-        value={selectedMonthValue}
-        onChange={(e) => setMonthOverride(e.target.value)}
+        aria-label="Call log month"
+        value={monthValue}
+        onChange={(e) => onMonthChange(e.target.value)}
       >
-        {MONTH_OPTIONS.map((opt) => (
+        {monthOptions.map((opt) => (
           <option key={opt.value} value={opt.value}>
             {opt.label}
           </option>
@@ -155,7 +117,7 @@ export function RepCallLog({
         type="button"
         className={styles.csvDownloadBtn}
         disabled={!canDownload}
-        onClick={() => calls && downloadCallsCsv(agentName, selectedMonthValue, calls)}
+        onClick={() => calls && downloadCallsCsv(agentName, monthValue, calls)}
       >
         Download CSV
       </button>

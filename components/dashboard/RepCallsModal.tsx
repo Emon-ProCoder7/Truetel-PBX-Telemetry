@@ -22,8 +22,40 @@ function shortDate(dateLike: string): string {
   }).format(d);
 }
 
+function monthLabel(monthValue: string): string {
+  const d = new Date(`${monthValue}-01T00:00:00`);
+  return new Intl.DateTimeFormat("en-AU", { month: "long", year: "numeric" }).format(d);
+}
+
+const CURRENT_YEAR = new Date().getFullYear();
+const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => {
+  const value = `${CURRENT_YEAR}-${String(i + 1).padStart(2, "0")}`;
+  return { value, label: monthLabel(value) };
+});
+
+// Melbourne-local "today" as YYYY-MM-DD, matching how call_date is stamped
+// everywhere else in this app (see the n8n ingestion Code nodes).
+function todayMelbourne(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Melbourne" }).format(new Date());
+}
+
+// Full calendar bounds for a "YYYY-MM" value, capped at today when the
+// selected month is the current month in progress.
+function monthBounds(monthValue: string): { start: string; end: string } {
+  const [y, m] = monthValue.split("-").map(Number);
+  const start = `${monthValue}-01`;
+  const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const monthEnd = `${monthValue}-${String(lastDay).padStart(2, "0")}`;
+  const today = todayMelbourne();
+  return { start, end: monthEnd > today ? today : monthEnd };
+}
+
 export function RepCallsModal({ agentName, range, periodLabel, onClose }: RepCallsModalProps) {
   const [tab, setTab] = useState<"overview" | "log">("overview");
+  // null = the Call log tab mirrors the top-level Today/This week/This month
+  // tab exactly as before. Set once the user picks a month from the Call
+  // log's own dropdown, which then drives both the table and this header.
+  const [logMonthOverride, setLogMonthOverride] = useState<string | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -37,7 +69,14 @@ export function RepCallsModal({ agentName, range, periodLabel, onClose }: RepCal
 
   useEffect(() => {
     setTab("overview");
+    setLogMonthOverride(null);
   }, [agentName]);
+
+  const logRange = logMonthOverride ? monthBounds(logMonthOverride) : range;
+  const logMonthValue = logMonthOverride ?? range.start.slice(0, 7);
+  const showingLogOverride = tab === "log" && logMonthOverride !== null;
+  const headerRange = showingLogOverride ? logRange : range;
+  const headerLabel = showingLogOverride ? monthLabel(logMonthOverride!) : periodLabel;
 
   return (
     <AnimatePresence>
@@ -66,8 +105,10 @@ export function RepCallsModal({ agentName, range, periodLabel, onClose }: RepCal
             <div>
               <div className={styles.modalTitle}>{agentName}</div>
               <div className={styles.modalSub}>
-                {periodLabel} view · window shown: {shortDate(`${range.start}T00:00:00`)}
-                {range.start !== range.end ? ` – ${shortDate(`${range.end}T00:00:00`)}` : ""}
+                {headerLabel} view · window shown: {shortDate(`${headerRange.start}T00:00:00`)}
+                {headerRange.start !== headerRange.end
+                  ? ` – ${shortDate(`${headerRange.end}T00:00:00`)}`
+                  : ""}
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -101,7 +142,13 @@ export function RepCallsModal({ agentName, range, periodLabel, onClose }: RepCal
             {tab === "overview" ? (
               <RepAnalyticsPanel agentName={agentName} />
             ) : (
-              <RepCallLog agentName={agentName} range={range} />
+              <RepCallLog
+                agentName={agentName}
+                range={logRange}
+                monthValue={logMonthValue}
+                monthOptions={MONTH_OPTIONS}
+                onMonthChange={setLogMonthOverride}
+              />
             )}
           </div>
         </motion.div>
