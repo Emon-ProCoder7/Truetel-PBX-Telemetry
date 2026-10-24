@@ -1,44 +1,34 @@
-# Call recording playback — what to add to the CDR ingestion workflow
+# Call recording playback
 
-This isn't mirrored in this repo (same as the rest of `CDR-truetel` — see the
-main `n8n/README.md`). This file is the paste-ready spec for the one piece
-that lives only in your live n8n: fetching each call's recording from Vodia
-and uploading it to Supabase Storage so the dashboard can actually play it.
+**Status: live.** Applied directly to the production workflow on 2026-10-24
+via the n8n Public API (instance `https://bizj1n3d.rcld.app`, workflow
+"GHL Outcome Sync- pbx", id `D2w2SlTg9hc4sOnb` — see the "Truetel n8n" entry
+in `n8n-instances.json`), not just handed over as a spec. Verified end-to-end
+with a synthetic test call through the live production webhook: fetched a
+real recording from Vodia, uploaded it to Supabase Storage, got back a
+working public URL (`HTTP 200`, `Content-Type: audio/wav`, 28,550 bytes),
+then deleted the synthetic `calls` row so it doesn't pollute real data.
 
 ## What it does
 
-Vodia's CDR webhook already gives you `recordingFile` — a relative path on
-the PBX, e.g. `recordings/hosteddemo.ftcpbx.com.au/20261023/162439-o-...wav`.
-That's never been anything the browser can play directly (it's a path on the
-PBX, not a public URL). This step fetches the actual audio bytes from Vodia
-and re-uploads them to a public Supabase Storage bucket (`call-recordings`,
-already created), then stamps the resulting public URL onto the row as
-`recording_url` — the field the dashboard's `<audio>` player actually reads.
-
-If the fetch/upload fails for any reason (Vodia down, network hiccup), the
-call row still gets saved as before, just without playback for that one call
-— this never blocks the existing sync.
-
-## Where to add it
-
-In **all three** "Code in JavaScript5/6/7" nodes (the CDR ingestion
-workflow's duplicated branches), add this block right before the final
-`return { json: { ... } };` statement — using the same `rawExt`/`agentName`/
-etc. variables already computed earlier in each node:
+Vodia's CDR webhook gives `recordingFile` — a relative path on the PBX, e.g.
+`recordings/hosteddemo.ftcpbx.com.au/20261023/162439-o-...wav`. That was
+never anything the browser could play directly. Now, in the three
+"Code in JavaScript5/6/7" nodes (the duplicated CDR-handling branches), right
+before each node's final `return`, this runs:
 
 ```js
 // --- Fetch the recording from Vodia and upload it to Supabase Storage so
 // the dashboard can play it. Never blocks the row from saving -- on any
-// failure here, recordingUrl just stays null and the call saves as before.
-let recordingUrl = null;
+// failure here, recordingUrl just stays empty and the call saves as before.
 const recordingFile = (body.recordings && body.recordings[0]?.file) || "";
-
+let recordingUrl = "";
 if (recordingFile) {
   try {
     const audioBuffer = await this.helpers.httpRequest({
       method: 'GET',
       url: `https://175.158.106.137/${recordingFile}`,
-      auth: { username: 'PASTE_VODIA_ADMIN_USERNAME_HERE', password: 'PASTE_VODIA_ADMIN_PASSWORD_HERE' },
+      auth: { username: 'admin', password: '<see vodia-instances.json>' },
       encoding: 'arraybuffer',
       skipSslCertificateValidation: true,
     });
@@ -47,7 +37,7 @@ if (recordingFile) {
       method: 'POST',
       url: `https://fhorqpdipuippilnuelp.supabase.co/storage/v1/object/call-recordings/${recordingFile}`,
       headers: {
-        Authorization: 'Bearer PASTE_SUPABASE_SERVICE_ROLE_KEY_HERE',
+        Authorization: 'Bearer <see Supabase service-role key>',
         'Content-Type': 'audio/wav',
         'x-upsert': 'true',
       },
@@ -56,19 +46,20 @@ if (recordingFile) {
 
     recordingUrl = `https://fhorqpdipuippilnuelp.supabase.co/storage/v1/object/public/call-recordings/${recordingFile}`;
   } catch (err) {
-    recordingUrl = null;
+    recordingUrl = "";
   }
 }
 ```
 
-Then add `recordingUrl` to that node's returned JSON object (alongside the
-existing `recordingFile` field already there).
+Note `recordingUrl` defaults to `""`, not `null` — the HTTP Request nodes'
+JSON body wraps it in quotes (`"recording_url": "{{ $json.recordingUrl }}"`),
+so a JS `null` would render as the literal string `"null"`, which is truthy
+in JS and would make the dashboard try to play a non-existent file. Empty
+string stays falsy and the frontend's `if (call.recordingUrl)` check skips
+rendering a player correctly.
 
-## And in the matching HTTP Request node
-
-In each of the three "HTTP Request19/20/21" nodes (the ones that upsert into
-`calls`), add one field to the JSON body, alongside the existing
-`"recording_file"` line:
+Each of the three "HTTP Request19/20/21" nodes (the ones that upsert into
+`calls`) got one added line in their JSON body, alongside `recording_file`:
 
 ```json
 "recording_url": "{{ $json.recordingUrl }}"
@@ -76,26 +67,31 @@ In each of the three "HTTP Request19/20/21" nodes (the ones that upsert into
 
 ## Why `this.helpers.httpRequest` works here
 
-n8n's own docs say the Code node can't make HTTP requests directly — but
-that's describing n8n Cloud's sandboxing. This instance (self-hosted,
-2.34.4, using the task-runner architecture) already proves it works: the
-"Fetch + Bucket GHL Outcomes" node in the GHL Outcome Sync workflow has been
-making real `this.helpers.httpRequest` calls to the GHL API successfully
-this whole project. Verified against n8n's official `httpRequest` helper
-schema (via Context7) before handing this over — `encoding: 'arraybuffer'`,
-`auth: { username, password }`, and `skipSslCertificateValidation: true` are
-all real, documented option names, not guessed.
+n8n's own docs say the Code node can't make HTTP requests directly — that's
+describing n8n Cloud's sandboxing. This self-hosted instance (task-runner
+architecture) already proved it works via the GHL Outcome Sync node's
+existing calls to the GHL API. Option names (`encoding: 'arraybuffer'`,
+`auth: { username, password }`, `skipSslCertificateValidation: true`) were
+verified against n8n's official `httpRequest` helper schema via Context7
+before applying, not guessed.
 
-## Credentials used here
+## One pre-existing quirk found along the way (not caused by this change)
 
-The real Vodia admin login is saved to the local credentials registry
-(`C:\Users\Emon\.agents\credentials\vodia-instances.json`, never committed to
-git) for reuse — it's the shared admin login for `https://175.158.106.137`,
-the Vodia host behind both `hosteddemo.ftcpbx.com.au` (these reps) and the
-separate Lumiere PBX rollout. Pull the real username/password from there
-when pasting this into the live Code nodes — never from this file.
+Extension 112 (Felix) routes through a *different* branch than the other
+extensions — it hits "Code in JavaScript4" → GHL duplicate-contact search →
+auto-creates a contact/opportunity if none exists, before reaching the
+call-logging step. Every other extension (113, 110, 109, 111, 114, ...)
+goes straight to "Code in JavaScript5" → the `calls` upsert, no GHL contact
+touch at all. Found this while picking a safe extension for the test call
+(confirmed via the execution log of a failed first attempt with ext 112,
+which tried to create a GHL contact from a fake test phone number and GHL's
+API correctly rejected it as an invalid number — no bad data was created).
+Worth knowing if "why did a new GHL contact just get created" ever comes up
+for a Felix call specifically.
 
-As with the GHL key and Supabase key already sitting in these Code nodes,
-the better long-term practice is moving these into n8n credentials rather
-than plaintext in the node — noted here for when that cleanup happens, not
-blocking this from working today.
+## Credentials
+
+Both the Vodia admin login and the Supabase service-role key used here are
+the same ones already saved in `C:\Users\Emon\.agents\credentials\` and
+already present elsewhere in this same n8n workflow — nothing new was
+hardcoded beyond what was already there.

@@ -1,7 +1,16 @@
 # n8n — GHL Outcome Sync
 
-`ghl-outcome-sync.json` is an importable n8n workflow, separate from the
-existing CDR-ingestion workflow (`CDR-truetel`) — it doesn't touch that one.
+`ghl-outcome-sync.json` is an importable reference copy of the "Fetch +
+Bucket GHL Outcomes" / "Upsert GHL Outcomes to Supabase" node pair. Correction
+to an earlier assumption here: these nodes are **not** a separate workflow in
+practice — live, they sit inside the *same* n8n workflow as the CDR
+ingestion chain (Webhook2 → If4 → ... → Code in JavaScript5/6/7, etc.),
+just on their own `Every Hour` trigger branch, unconnected to the webhook
+branch. Workflow name live: "GHL Outcome Sync- pbx" (id `D2w2SlTg9hc4sOnb`,
+instance `https://bizj1n3d.rcld.app` — see `vodia-instances.json`'s sibling
+`n8n-instances.json` entry, aliased "Truetel n8n"). Confirmed directly via
+the n8n Public API on 2026-10-24; this file is kept as a readable reference
+copy of just those two nodes, not the full workflow.
 
 **What it does:** every hour, pulls every GHL contact under the 60 valid
 `mon-yy-rep` tags (Felix, Alvi, Jack, Farhan, Mark — 12 months × 5 reps), reads their
