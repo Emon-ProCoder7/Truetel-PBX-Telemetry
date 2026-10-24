@@ -63,6 +63,7 @@ const REP_FILTERS: { key: RepFilter; label: string }[] = [
   { key: "alvi", label: "Alvi" },
   { key: "jack", label: "Jack" },
   { key: "farhan", label: "Farhan" },
+  { key: "mark", label: "Mark" },
 ];
 
 /**
@@ -76,7 +77,13 @@ const REP_FILTERS: { key: RepFilter; label: string }[] = [
  * Fetches every rep's full trend in one call (see getSalesResults) and
  * filters client-side on rep selection — instant switching, no re-fetch.
  */
-const REP_LABEL: Record<string, string> = { felix: "Felix", alvi: "Alvi", jack: "Jack", farhan: "Farhan" };
+const REP_LABEL: Record<string, string> = {
+  felix: "Felix",
+  alvi: "Alvi",
+  jack: "Jack",
+  farhan: "Farhan",
+  mark: "Mark",
+};
 
 export function OutcomeTrendChart({ trend, year }: { trend: OutcomeTrendPoint[]; year: string }) {
   const [repFilter, setRepFilter] = useState<RepFilter>("all");

@@ -6,7 +6,13 @@ import styles from "./dashboard.module.css";
 import type { OutcomeContact } from "@/lib/dashboard/types";
 import { formatRelativeTime } from "@/lib/dashboard/format";
 
-const REP_LABEL: Record<string, string> = { felix: "Felix", alvi: "Alvi", jack: "Jack", farhan: "Farhan" };
+const REP_LABEL: Record<string, string> = {
+  felix: "Felix",
+  alvi: "Alvi",
+  jack: "Jack",
+  farhan: "Farhan",
+  mark: "Mark",
+};
 
 const STATUS_LABEL: Record<string, string> = {
   new: "New",

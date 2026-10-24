@@ -7,8 +7,14 @@ import { formatCount, formatPercent } from "@/lib/dashboard/format";
 import { OutcomeTrendChart } from "./OutcomeTrendChart";
 import { OutcomeContactsModal } from "./OutcomeContactsModal";
 
-const SALES_REPS: RepOutcomeSummary["rep"][] = ["felix", "alvi", "jack", "farhan"];
-const REP_LABEL: Record<string, string> = { felix: "Felix", alvi: "Alvi", jack: "Jack", farhan: "Farhan" };
+const SALES_REPS: RepOutcomeSummary["rep"][] = ["felix", "alvi", "jack", "farhan", "mark"];
+const REP_LABEL: Record<string, string> = {
+  felix: "Felix",
+  alvi: "Alvi",
+  jack: "Jack",
+  farhan: "Farhan",
+  mark: "Mark",
+};
 
 const EMPTY_OUTCOME = (rep: RepOutcomeSummary["rep"]): RepOutcomeSummary => ({
   rep,
@@ -101,7 +107,7 @@ export function SalesResultsPanel() {
         <div className={styles.resultsTitleGroup}>
           <span className={styles.resultsTitle}>Sales results — effort + outcome</span>
           <span className={styles.resultsSub}>
-            {monthLabel(selectedMonth)} · Felix, Alvi, Jack, Farhan — the reps tracked in GHL. Outcome
+            {monthLabel(selectedMonth)} · Felix, Alvi, Jack, Farhan, Mark — the reps tracked in GHL. Outcome
             counts are current status, attributed to the month each contact was tagged worked —
             a monthly figure, not a daily one.
           </span>
@@ -235,7 +241,7 @@ export function SalesResultsPanel() {
           {openStage ? (
             <OutcomeContactsModal
               title={openStage.label}
-              subtitle={`${monthLabel(selectedMonth)} · Felix, Alvi, Jack, Farhan`}
+              subtitle={`${monthLabel(selectedMonth)} · Felix, Alvi, Jack, Farhan, Mark`}
               start={data.range.start}
               end={data.range.end}
               buckets={openStage.buckets}
