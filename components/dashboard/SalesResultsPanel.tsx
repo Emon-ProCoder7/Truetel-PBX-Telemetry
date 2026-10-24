@@ -5,6 +5,7 @@ import styles from "./dashboard.module.css";
 import type { RepOutcomeSummary, RepStats, SalesResults } from "@/lib/dashboard/types";
 import { formatCount, formatPercent } from "@/lib/dashboard/format";
 import { OutcomeTrendChart } from "./OutcomeTrendChart";
+import { OutcomeContactsModal } from "./OutcomeContactsModal";
 
 const SALES_REPS: RepOutcomeSummary["rep"][] = ["felix", "alvi", "jack", "farhan"];
 const REP_LABEL: Record<string, string> = { felix: "Felix", alvi: "Alvi", jack: "Jack", farhan: "Farhan" };
@@ -38,6 +39,7 @@ export function SalesResultsPanel() {
   const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH_VALUE);
   const [data, setData] = useState<SalesResults | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [openStage, setOpenStage] = useState<{ label: string; buckets: string[] } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,12 +86,12 @@ export function SalesResultsPanel() {
 
   // New + Working aren't results, just "not there yet" — one quiet line
   // instead of two bars competing with what actually happened.
-  const funnelStages: { label: string; value: number; tone?: "won" | "lost" | "muted" }[] = [
-    { label: "Still working", value: totals.new + totals.working, tone: "muted" },
-    { label: "Appointment booked", value: totals.appointmentBooked },
-    { label: "Proposal sent", value: totals.proposalSent },
-    { label: "Won", value: totals.won, tone: "won" },
-    { label: "Lost", value: totals.lost, tone: "lost" },
+  const funnelStages: { label: string; value: number; tone?: "won" | "lost" | "muted"; buckets: string[] }[] = [
+    { label: "Still working", value: totals.new + totals.working, tone: "muted", buckets: ["new", "working"] },
+    { label: "Appointment booked", value: totals.appointmentBooked, buckets: ["appointment_booked"] },
+    { label: "Proposal sent", value: totals.proposalSent, buckets: ["proposal_sent"] },
+    { label: "Won", value: totals.won, tone: "won", buckets: ["won"] },
+    { label: "Lost", value: totals.lost, tone: "lost", buckets: ["lost"] },
   ];
   const maxFunnel = Math.max(1, ...funnelStages.map((s) => s.value));
 
@@ -161,7 +163,13 @@ export function SalesResultsPanel() {
 
           <div className={styles.funnel}>
             {funnelStages.map((stage) => (
-              <div className={styles.funnelRow} key={stage.label}>
+              <button
+                type="button"
+                className={styles.funnelRow}
+                key={stage.label}
+                onClick={() => setOpenStage({ label: stage.label, buckets: stage.buckets })}
+                aria-label={`View contacts: ${stage.label}`}
+              >
                 <span className={styles.funnelLabel}>{stage.label}</span>
                 <div className={styles.funnelTrack}>
                   <span
@@ -171,7 +179,7 @@ export function SalesResultsPanel() {
                   />
                 </div>
                 <span className={styles.funnelCount}>{stage.value}</span>
-              </div>
+              </button>
             ))}
           </div>
 
@@ -222,6 +230,18 @@ export function SalesResultsPanel() {
             <div className={styles.resultsFootnote}>
               {`${totals.unclear} more ${totals.unclear === 1 ? "contact is" : "contacts are"} sitting in a legacy pipeline stage ("Closed") that doesn't distinguish won from lost — worth a manual check.`}
             </div>
+          ) : null}
+
+          {openStage ? (
+            <OutcomeContactsModal
+              title={openStage.label}
+              subtitle={`${monthLabel(selectedMonth)} · Felix, Alvi, Jack, Farhan`}
+              start={data.range.start}
+              end={data.range.end}
+              buckets={openStage.buckets}
+              rep={null}
+              onClose={() => setOpenStage(null)}
+            />
           ) : null}
         </>
       )}

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import styles from "./dashboard.module.css";
 import type { OutcomeBucket, OutcomeTrendPoint, RepOutcomeSummary } from "@/lib/dashboard/types";
+import { OutcomeContactsModal } from "./OutcomeContactsModal";
 
 // New + Working aren't results, just "hasn't gotten there yet" — merged into
 // one quiet segment so the stack reads as results first, backlog second.
@@ -24,6 +25,15 @@ const DISPLAY_LABEL: Record<DisplayBucket, string> = {
   won: "Won",
   lost: "Lost",
   unclear: "Unclear",
+};
+
+const DISPLAY_BUCKETS: Record<DisplayBucket, string[]> = {
+  still_working: ["new", "working"],
+  appointment_booked: ["appointment_booked"],
+  proposal_sent: ["proposal_sent"],
+  won: ["won"],
+  lost: ["lost"],
+  unclear: ["closed_unclear", "unmapped"],
 };
 
 const DISPLAY_COLOR: Record<DisplayBucket, string> = {
@@ -66,8 +76,11 @@ const REP_FILTERS: { key: RepFilter; label: string }[] = [
  * Fetches every rep's full trend in one call (see getSalesResults) and
  * filters client-side on rep selection — instant switching, no re-fetch.
  */
+const REP_LABEL: Record<string, string> = { felix: "Felix", alvi: "Alvi", jack: "Jack", farhan: "Farhan" };
+
 export function OutcomeTrendChart({ trend, year }: { trend: OutcomeTrendPoint[]; year: string }) {
   const [repFilter, setRepFilter] = useState<RepFilter>("all");
+  const [openBucket, setOpenBucket] = useState<DisplayBucket | null>(null);
 
   const filtered = repFilter === "all" ? trend : trend.filter((t) => t.rep === repFilter);
 
@@ -149,14 +162,32 @@ export function OutcomeTrendChart({ trend, year }: { trend: OutcomeTrendPoint[];
           </div>
           <div className={styles.trendLegend}>
             {DISPLAY_ORDER.map((bucket) => (
-              <span className={styles.trendLegendItem} key={bucket}>
+              <button
+                type="button"
+                className={styles.trendLegendItem}
+                key={bucket}
+                onClick={() => setOpenBucket(bucket)}
+                aria-label={`View contacts: ${DISPLAY_LABEL[bucket]}`}
+              >
                 <span className={styles.trendLegendSwatch} style={{ background: DISPLAY_COLOR[bucket] }} />
                 {DISPLAY_LABEL[bucket]}
-              </span>
+              </button>
             ))}
           </div>
         </>
       )}
+
+      {openBucket ? (
+        <OutcomeContactsModal
+          title={DISPLAY_LABEL[openBucket]}
+          subtitle={`${year} · ${repFilter === "all" ? "All reps" : REP_LABEL[repFilter]}`}
+          start={`${year}-01-01`}
+          end={`${year}-12-31`}
+          buckets={DISPLAY_BUCKETS[openBucket]}
+          rep={repFilter === "all" ? null : repFilter}
+          onClose={() => setOpenBucket(null)}
+        />
+      ) : null}
     </div>
   );
 }

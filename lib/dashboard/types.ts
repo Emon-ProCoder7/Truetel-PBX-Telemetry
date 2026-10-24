@@ -112,6 +112,19 @@ export type OutcomeTrendPoint = {
   contacts: number;
 };
 
+export type OutcomeContact = {
+  contactId: string;
+  contactName: string | null;
+  phone: string | null;
+  rep: RepOutcomeSummary["rep"];
+  tag: string;
+  tagMonth: string; // YYYY-MM-01
+  stageBucket: string;
+  opportunityStatus: string | null;
+  dmCollected: boolean;
+  syncedAt: string;
+};
+
 export type SalesResults = {
   range: { start: string; end: string };
   view: "month" | "year";

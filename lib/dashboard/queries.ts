@@ -8,6 +8,7 @@ import type {
   DashboardOverview,
   DashboardPeriod,
   OutcomeBucket,
+  OutcomeContact,
   PeriodAggregate,
   RecentCall,
   RepAnalytics,
@@ -422,4 +423,42 @@ export async function getSalesResults(
     trend,
     generatedAt: new Date().toISOString(),
   };
+}
+
+function mapOutcomeContact(row: Record<string, unknown>): OutcomeContact {
+  return {
+    contactId: String(row.contact_id),
+    contactName: (row.contact_name as string) || null,
+    phone: (row.phone as string) || null,
+    rep: row.rep as RepOutcomeSummary["rep"],
+    tag: String(row.tag),
+    tagMonth: String(row.tag_month),
+    stageBucket: String(row.stage_bucket),
+    opportunityStatus: (row.opportunity_status as string) || null,
+    dmCollected: Boolean(row.dm_collected),
+    syncedAt: String(row.synced_at),
+  };
+}
+
+/**
+ * The actual contacts behind a funnel stage or Monthly Cohorts legend
+ * count — same dedup rules as rep_outcome_summary, just returned as rows.
+ * p_buckets are the underlying ghl_outcomes stage_bucket values a clicked
+ * label maps to (e.g. "Still working" -> ['new','working']).
+ */
+export async function getOutcomeContacts(
+  p_start: string,
+  p_end: string,
+  buckets: string[],
+  rep: string | null
+): Promise<OutcomeContact[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase.rpc("outcome_contacts", {
+    p_start,
+    p_end,
+    p_buckets: buckets,
+    p_rep: rep,
+  });
+  if (error) throw new Error(`Outcome contacts query failed: ${error.message}`);
+  return ((data as Record<string, unknown>[] | null) ?? []).map(mapOutcomeContact);
 }

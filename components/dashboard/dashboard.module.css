@@ -967,10 +967,31 @@
 }
 
 .funnelRow {
+  appearance: none;
+  background: transparent;
+  border: 1px solid transparent;
   display: grid;
   grid-template-columns: 132px 1fr 46px;
   align-items: center;
   gap: 10px;
+  width: 100%;
+  padding: 4px 6px;
+  margin: -4px -6px;
+  border-radius: 7px;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+
+.funnelRow:hover,
+.funnelRow:focus-visible {
+  background: var(--bg-raised);
+  border-color: var(--line);
+}
+
+.funnelRow:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 .funnelLabel {
@@ -1089,9 +1110,30 @@
 }
 
 .trendLegendItem {
+  appearance: none;
+  background: transparent;
+  border: 1px solid transparent;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  padding: 3px 8px 3px 6px;
+  margin: -3px -8px -3px -6px;
+  border-radius: 999px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.trendLegendItem:hover,
+.trendLegendItem:focus-visible {
+  background: var(--bg-raised);
+  border-color: var(--line);
+  color: var(--fg);
+}
+
+.trendLegendItem:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 .trendLegendSwatch {
