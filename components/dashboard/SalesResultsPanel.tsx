@@ -46,6 +46,11 @@ export function SalesResultsPanel() {
   const [data, setData] = useState<SalesResults | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [openStage, setOpenStage] = useState<{ label: string; buckets: string[] } | null>(null);
+  // Year-to-date appointments booked, per rep — fetched once (the year view
+  // already exists server-side; it just wasn't exposed here since the
+  // month/year toggle was replaced by the month picker). Independent of
+  // selectedMonth, since every month option is already within CURRENT_YEAR.
+  const [ytdOutcomes, setYtdOutcomes] = useState<RepOutcomeSummary[] | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,8 +69,26 @@ export function SalesResultsPanel() {
     };
   }, [selectedMonth]);
 
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/sales-results?view=year&anchor=${CURRENT_YEAR}-01-01`, { cache: "no-store" })
+      .then(async (res) => {
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error ?? `status ${res.status}`);
+        if (!cancelled) setYtdOutcomes((json as SalesResults).outcomes);
+      })
+      .catch(() => {
+        // Non-critical: the YTD column just stays blank if this fails: the
+        // monthly table above still works fine on its own.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const outcomesByRep = new Map(data?.outcomes.map((o) => [o.rep, o]));
   const effortByRep = new Map<string, RepStats>(data?.effort.map((e) => [e.agentName.toLowerCase(), e]));
+  const ytdAppointmentsByRep = new Map(ytdOutcomes?.map((o) => [o.rep, o.appointmentBooked]));
 
   const rows = SALES_REPS.map((rep) => ({
     rep,
@@ -199,6 +222,7 @@ export function SalesResultsPanel() {
                   <th>DM collected</th>
                   <th>Tagged</th>
                   <th>Appt. booked</th>
+                  <th>Appt. booked (YTD)</th>
                   <th>Proposal sent</th>
                   <th>Won</th>
                   <th>Lost</th>
@@ -215,6 +239,9 @@ export function SalesResultsPanel() {
                     <td className={styles.cellNum}>{outcome.dmCollected}</td>
                     <td className={styles.cellNum}>{outcome.taggedContacts}</td>
                     <td className={styles.cellNum}>{outcome.appointmentBooked}</td>
+                    <td className={styles.cellNum}>
+                      {ytdOutcomes === null ? "…" : ytdAppointmentsByRep.get(rep) ?? 0}
+                    </td>
                     <td className={styles.cellNum}>{outcome.proposalSent}</td>
                     <td className={styles.cellNum}>{outcome.won}</td>
                     <td className={styles.cellNum}>{outcome.lost}</td>
