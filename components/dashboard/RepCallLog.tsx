@@ -182,9 +182,13 @@ export function RepCallLog({
               <td className={styles.cellNum}>{call.ringTime ?? "—"}</td>
               <td className={styles.cellNum}>{call.totalDuration ?? "—"}</td>
               <td>
-                <span className={styles.recBadge} data-available={Boolean(call.recordingFile)}>
-                  {call.recordingFile ? call.recordingFile : "None"}
-                </span>
+                {call.recordingUrl ? (
+                  <audio className={styles.audioPlayer} controls preload="none" src={call.recordingUrl} />
+                ) : (
+                  <span className={styles.recBadge} data-available={false}>
+                    {call.recordingFile ? "Not uploaded yet" : "None"}
+                  </span>
+                )}
               </td>
             </tr>
           ))}

@@ -51,6 +51,7 @@ export type CallDetail = {
   talkTime: string | null;
   ringTime: string | null;
   recordingFile: string | null;
+  recordingUrl: string | null;
 };
 
 export type PeriodAggregate = {

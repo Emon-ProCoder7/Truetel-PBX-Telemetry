@@ -628,6 +628,13 @@
   color: var(--fg-dim);
 }
 
+.audioPlayer {
+  display: block;
+  width: 220px;
+  height: 32px;
+  border-radius: 8px;
+}
+
 /* ---------- Rep analytics panel (inside modal) ---------- */
 
 .modalTabs {

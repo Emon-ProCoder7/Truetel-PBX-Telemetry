@@ -96,6 +96,7 @@ function mapCallDetail(row: Record<string, unknown>): CallDetail {
     talkTime: (row.talk_time as string) ?? null,
     ringTime: (row.ring_time as string) ?? null,
     recordingFile: (row.recording_file as string) || null,
+    recordingUrl: (row.recording_url as string) || null,
   };
 }
 
@@ -109,7 +110,7 @@ export async function getRepCallDetails(
   const { data, error } = await supabase
     .from("calls")
     .select(
-      "call_id, call_timestamp, call_direction, phone_number, call_status, total_duration, talk_time, ring_time, recording_file"
+      "call_id, call_timestamp, call_direction, phone_number, call_status, total_duration, talk_time, ring_time, recording_file, recording_url"
     )
     .eq("agent_name", agentName)
     .gte("call_date", start)
