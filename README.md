@@ -35,6 +35,18 @@ Supabase Auth login) before sharing the URL beyond people who should have it.
 2. Add both environment variables above (Production + Preview)
 3. Deploy — no other config needed, it's a standard Next.js app
 
+**Auto-deploy on push:** the Vercel project (`truetel-pbx-telemetry`,
+production domain `bdm-traction.truetel.com.au`) is connected to this
+GitHub repo (`vercel git connect`) so pushes to `main` deploy automatically.
+This connection was found silently broken on 2026-11-17 — every commit from
+2026-10-24 through 2026-11-17 (recording playback, Mark rename, YTD column,
+the Saif rep addition) had been merged but never actually deployed, because
+nothing was running `vercel --prod` manually and the Git integration had
+dropped. Reconnected via `vercel git connect <repo-url>` and verified with a
+real push. If a change ever looks "live" in git but not on the site, check
+`vercel ls` for the age of the last Production deployment before assuming
+the code itself is broken.
+
 ## Data pipeline
 
 n8n's 3CX/PBX webhook workflow posts call events to `POST /rest/v1/calls` on
