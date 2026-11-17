@@ -64,6 +64,7 @@ const REP_FILTERS: { key: RepFilter; label: string }[] = [
   { key: "jack", label: "Jack" },
   { key: "farhan", label: "Farhan" },
   { key: "mark", label: "Mark" },
+  { key: "saif", label: "Saif" },
 ];
 
 /**
@@ -83,6 +84,7 @@ const REP_LABEL: Record<string, string> = {
   jack: "Jack",
   farhan: "Farhan",
   mark: "Mark",
+  saif: "Saif",
 };
 
 export function OutcomeTrendChart({ trend, year }: { trend: OutcomeTrendPoint[]; year: string }) {

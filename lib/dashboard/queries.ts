@@ -375,10 +375,11 @@ const BUCKET_ALIAS: Record<string, OutcomeBucket> = {
 
 /**
  * Sales outcomes, sourced from GHL tags + BDM/cold-caller pipeline stages
- * (synced into `ghl_outcomes` by a separate n8n workflow). Only felix, alvi,
- * and jack carry this tracking today — Samprit and Emon/Toby aren't sales
- * reps and are intentionally excluded here (they still show in the raw call
- * effort table above).
+ * (synced into `ghl_outcomes` by a separate n8n workflow). Felix, Alvi,
+ * Jack, Farhan, Mark and Saif carry this tracking — Samprit and Emon/Toby
+ * aren't sales reps and are intentionally excluded here (they still show in
+ * the raw call effort table above). Saif has no extension and never makes
+ * calls, so he never appears in the call-effort table — only here.
  *
  * Grain: month/year, not daily — see the migration's header comment for why
  * (GHL's stage-change timestamps are contaminated by bulk admin sweeps, not

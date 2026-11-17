@@ -94,7 +94,7 @@ export type OutcomeBucket =
   | "unclear";
 
 export type RepOutcomeSummary = {
-  rep: "felix" | "alvi" | "jack" | "farhan" | "mark";
+  rep: "felix" | "alvi" | "jack" | "farhan" | "mark" | "saif";
   taggedContacts: number;
   dmCollected: number;
   new: number;
